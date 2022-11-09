@@ -320,7 +320,7 @@ static void iperf_client_udp(void *arg)
         goto __exit;
     }
 
-    printf("bind UDP socket successfully!\r\n");
+    // printf("bind UDP socket successfully!\r\n");
 
     memset(&raddr, 0, sizeof(struct sockaddr_in));
     raddr.sin_family = PF_INET;
@@ -425,7 +425,7 @@ struct iperf_server_udp_ctx {
     *((uint8_t *)(ptr) + 2) = (_tmp >> 8) & 0xff;  \
     *((uint8_t *)(ptr) + 3) = (_tmp >> 0) & 0xff;  \
   }
-
+extern int wifi_mgmr_rssi_get(int *rssi);
 static void iperf_server_udp_recv_fn(void *arg, struct udp_pcb *pcb, struct pbuf *p,
     const ip_addr_t *addr, u16_t port)
 {
@@ -483,12 +483,15 @@ static void iperf_server_udp_recv_fn(void *arg, struct udp_pcb *pcb, struct pbuf
         if (ctx->f_max < f_now) {
             ctx->f_max = f_now;
         }
-        snprintf(speed, sizeof(speed), "%.4f(%.4f %.4f %.4f) Mbps, out of order: %" PRId32 ".\r\n",
+         int rssi;
+        wifi_mgmr_rssi_get(&rssi);
+        snprintf(speed, sizeof(speed), "%.4f,\t%.4f,%.4f,%.4f,Mbps,%" PRId32 ",\t%d,dBm\r\n",
                 f_now,
                 ctx->f_min,
                 f_avg,
                 ctx->f_max,
-                ctx->out_of_order_curr
+                ctx->out_of_order_curr,
+                rssi
         );
         printf("%s", speed);
 
@@ -539,7 +542,8 @@ static void iperf_server_udp(void *arg)
         goto _exit;
     }
 
-    printf("bind UDP socket successfully!\r\n");
+    // printf("bind UDP socket successfully!\r\n");
+    printf("\r\n");
 
     memset(&context, 0, sizeof context);
     context.f_min = 8000.0;
@@ -591,7 +595,7 @@ _ERROUT:
     return;
 }
 
-static void iperf_server_udp_entry(const char *name)
+void iperf_server_udp_entry(const char *name)
 {
 
     iperf_param_t *iperf_param;
@@ -790,12 +794,12 @@ static void ipu_test_cmd(char *buf, int len, int argc, char **argv)
 static void ipus_test_cmd(char *buf, int len, int argc, char **argv)
 {
     if (1 == argc) {
-        printf(DEBUG_HEADER "[IPUS] Connecting with default address 0.0.0.0\r\n");
+        // printf(DEBUG_HEADER "[IPUS] Connecting with default address 0.0.0.0\r\n");
         iperf_server_udp_entry(IPERF_IP_LOCAL);
     } else if (2 == argc) {
         iperf_server_udp_entry(argv[1]);
     } else {
-        printf(DEBUG_HEADER  "[IPUS] illegal address\r\n");
+        // printf(DEBUG_HEADER  "[IPUS] illegal address\r\n");
     }
 }
 
@@ -804,96 +808,96 @@ static void iperf_exit_cmd(char *buf, int len, int argc, char **argv)
     exit_flag = 1;
 }
 
-static void iperf_cmd(char *buf, int len, int argc, char **argv)
-{
-    iperf_param_t *iperf_param;
-    getopt_env_t getopt_env;
-    int opt, host_len, server_client = IPERF_CLIENT, tcp_udp = IPERF_TCP;
+// static void iperf_cmd(char *buf, int len, int argc, char **argv)
+// {
+//     iperf_param_t *iperf_param;
+//     getopt_env_t getopt_env;
+//     int opt, host_len, server_client = IPERF_CLIENT, tcp_udp = IPERF_TCP;
 
-    iperf_param = pvPortMalloc(sizeof(iperf_param_t));
-    if (iperf_param == NULL) {
-        printf("[IPC] Malloc error\r\n");
-        goto _ERROUT;
-    }
+//     iperf_param = pvPortMalloc(sizeof(iperf_param_t));
+//     if (iperf_param == NULL) {
+//         printf("[IPC] Malloc error\r\n");
+//         goto _ERROUT;
+//     }
 
-    memset(iperf_param, 0, sizeof(iperf_param_t));
-    utils_getopt_init(&getopt_env, 0);
+//     memset(iperf_param, 0, sizeof(iperf_param_t));
+//     utils_getopt_init(&getopt_env, 0);
 
-    while ((opt = utils_getopt(&getopt_env, argc, argv, "c:p:su")) != -1) {
-        switch (opt) {
-        case 'c':
-            host_len = strlen(getopt_env.optarg) + 4;
-            iperf_param->host = pvPortMalloc(host_len);//mem will be free in tcpc_entry
-            if (NULL == iperf_param->host) {
-                printf("[TCPC] run out of mem for host alloc\r\n");
-                goto _ERROUT;
-            }
-            strcpy(iperf_param->host, getopt_env.optarg);
-            break;
+//     while ((opt = utils_getopt(&getopt_env, argc, argv, "c:p:su")) != -1) {
+//         switch (opt) {
+//         case 'c':
+//             host_len = strlen(getopt_env.optarg) + 4;
+//             iperf_param->host = pvPortMalloc(host_len);//mem will be free in tcpc_entry
+//             if (NULL == iperf_param->host) {
+//                 printf("[TCPC] run out of mem for host alloc\r\n");
+//                 goto _ERROUT;
+//             }
+//             strcpy(iperf_param->host, getopt_env.optarg);
+//             break;
 
-        case 'p':
-            iperf_param->port = atoi(getopt_env.optarg);
-            break;
+//         case 'p':
+//             iperf_param->port = atoi(getopt_env.optarg);
+//             break;
 
-        case 's':
-            server_client = IPERF_SERVER;
-            break;
+//         case 's':
+//             server_client = IPERF_SERVER;
+//             break;
 
-        case 'u':
-            tcp_udp = IPERF_UDP;
-            break;
+//         case 'u':
+//             tcp_udp = IPERF_UDP;
+//             break;
 
-        case '?':
-            printf("unknow option: %c\r\n", getopt_env.optopt);
-            goto _ERROUT;
-        }
-    }
+//         case '?':
+//             printf("unknow option: %c\r\n", getopt_env.optopt);
+//             goto _ERROUT;
+//         }
+//     }
 
-    if ((NULL != iperf_param->host) && (server_client == IPERF_SERVER)) {
-        printf("server and client can't be set at the time\r\n");
-        goto _ERROUT;
-    }
+//     if ((NULL != iperf_param->host) && (server_client == IPERF_SERVER)) {
+//         printf("server and client can't be set at the time\r\n");
+//         goto _ERROUT;
+//     }
 
-    if (iperf_param->port == 0) {
-        iperf_param->port = IPERF_PORT;
-    }
+//     if (iperf_param->port == 0) {
+//         iperf_param->port = IPERF_PORT;
+//     }
 
-    if (server_client == IPERF_CLIENT) {
-        if (NULL == iperf_param->host) {
-            host_len = strlen(DEFAULT_HOST_IP) + 4;
-            iperf_param->host = pvPortMalloc(host_len);//mem will be free in tcpc_entry
-            if (NULL == iperf_param->host) {
-                printf("[TCPC] run out of mem for host alloc\r\n");
-                goto _ERROUT;
-            }
-            strcpy(iperf_param->host, DEFAULT_HOST_IP);
-        }
+//     if (server_client == IPERF_CLIENT) {
+//         if (NULL == iperf_param->host) {
+//             host_len = strlen(DEFAULT_HOST_IP) + 4;
+//             iperf_param->host = pvPortMalloc(host_len);//mem will be free in tcpc_entry
+//             if (NULL == iperf_param->host) {
+//                 printf("[TCPC] run out of mem for host alloc\r\n");
+//                 goto _ERROUT;
+//             }
+//             strcpy(iperf_param->host, DEFAULT_HOST_IP);
+//         }
 
-        if (tcp_udp == IPERF_TCP) {
-            printf(DEBUG_HEADER "[IPC] Connecting with default address %s port %d\r\n", iperf_param->host ? iperf_param->host: DEFAULT_HOST_IP, iperf_param->port);
-            aos_task_new("ipc", iperf_client_tcp, (void *)iperf_param, 4096);
-        } else if (tcp_udp == IPERF_UDP) {
-            printf(DEBUG_HEADER "[IPU] Connecting with default address %s port %d\r\n", iperf_param->host ? iperf_param->host: DEFAULT_HOST_IP, iperf_param->port);
-            aos_task_new("ipu", iperf_client_udp, (void *)iperf_param, 4096);
-        }
-        return;
-    } else if (server_client == IPERF_SERVER) {
-        if (tcp_udp == IPERF_TCP) {
-            printf(DEBUG_HEADER "[IPS] Starting iperf server on %s port %d\r\n", IPERF_IP_LOCAL, iperf_param->port);
-            aos_task_new("ips", iperf_server, (void *)iperf_param, 4096);
-        } else if (tcp_udp == IPERF_UDP) {
-            printf(DEBUG_HEADER "[IPUS] Starting iperf server on %s port %d\r\n", IPERF_IP_LOCAL, iperf_param->port);
-            aos_task_new("ipus", iperf_server_udp, (void *)iperf_param, 4096);
-        }
-        return;
-    }
+//         if (tcp_udp == IPERF_TCP) {
+//             printf(DEBUG_HEADER "[IPC] Connecting with default address %s port %d\r\n", iperf_param->host ? iperf_param->host: DEFAULT_HOST_IP, iperf_param->port);
+//             aos_task_new("ipc", iperf_client_tcp, (void *)iperf_param, 4096);
+//         } else if (tcp_udp == IPERF_UDP) {
+//             printf(DEBUG_HEADER "[IPU] Connecting with default address %s port %d\r\n", iperf_param->host ? iperf_param->host: DEFAULT_HOST_IP, iperf_param->port);
+//             aos_task_new("ipu", iperf_client_udp, (void *)iperf_param, 4096);
+//         }
+//         return;
+//     } else if (server_client == IPERF_SERVER) {
+//         if (tcp_udp == IPERF_TCP) {
+//             printf(DEBUG_HEADER "[IPS] Starting iperf server on %s port %d\r\n", IPERF_IP_LOCAL, iperf_param->port);
+//             aos_task_new("ips", iperf_server, (void *)iperf_param, 4096);
+//         } else if (tcp_udp == IPERF_UDP) {
+//             printf(DEBUG_HEADER "[IPUS] Starting iperf server on %s port %d\r\n", IPERF_IP_LOCAL, iperf_param->port);
+//             aos_task_new("ipus", iperf_server_udp, (void *)iperf_param, 4096);
+//         }
+//         return;
+//     }
     
-_ERROUT:
-    if (iperf_param->host) vPortFree(iperf_param->host);
-    if (iperf_param) vPortFree(iperf_param);
-    printf("[USAGE]: %s [-s] [-c <host>] [-p <port>] [-u]\r\n", argv[0]);
-    return;
-}
+// _ERROUT:
+//     if (iperf_param->host) vPortFree(iperf_param->host);
+//     if (iperf_param) vPortFree(iperf_param);
+//     printf("[USAGE]: %s [-s] [-c <host>] [-p <port>] [-u]\r\n", argv[0]);
+//     return;
+// }
 
 // STATIC_CLI_CMD_ATTRIBUTE makes this(these) command(s) static
 const static struct cli_command cmds_user[] STATIC_CLI_CMD_ATTRIBUTE = {
@@ -901,7 +905,7 @@ const static struct cli_command cmds_user[] STATIC_CLI_CMD_ATTRIBUTE = {
     { "ips", "iperf TCP server", ips_test_cmd},
     { "ipu", "iperf UDP client", ipu_test_cmd},
     { "ipus", "iperf UDP server", ipus_test_cmd},
-    { "iperf_stop", "stop iperf", iperf_exit_cmd},
+    { "stop", "stop iperf", iperf_exit_cmd},
     // { "iperf", "iperf cmd", iperf_cmd},
 };
 

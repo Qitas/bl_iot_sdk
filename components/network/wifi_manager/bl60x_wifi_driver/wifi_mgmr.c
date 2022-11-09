@@ -306,8 +306,8 @@ static bool stateGlobalGuard_disable_autoreconnect( void *ch, struct event *even
     }
 
     if (&stateDisconnect == wifiMgmr.m.currentState) {
-        bl_os_printf("Disable Autoreconnect in Disconnec State\r\n");
-        bl_os_printf(DEBUG_HEADER "Removing STA interface...\r\n");
+        // bl_os_printf("Disable Autoreconnect in Disconnec State\r\n");
+        // bl_os_printf(DEBUG_HEADER "Removing STA interface...\r\n");
         bl_main_if_remove(wifiMgmr.wlan_sta.vif_index);
         return true;
     }
@@ -448,10 +448,10 @@ static bool stateGuard( void *ch, struct event *event )
 static void stateAction( void *oldStateData, struct event *event,
       void *newStateData )
 {
-    bl_os_printf(DEBUG_HEADER "State Action ###%s### --->>> ###%s###\r\n",
-            (char*)oldStateData,
-            (char*)newStateData
-    );
+    // bl_os_printf(DEBUG_HEADER "State Action ###%s### --->>> ###%s###\r\n",
+    //         (char*)oldStateData,
+    //         (char*)newStateData
+    // );
 }
 
 
@@ -528,7 +528,7 @@ static bool stateGlobal_cfg_req(void *ch, struct event *event)
 
 static void stateConnectingEnter( void *stateData, struct event *event )
 {
-   bl_os_printf(DEBUG_HEADER "Entering %s state\r\n", (char *)stateData);
+//    bl_os_printf(DEBUG_HEADER "Entering %s state\r\n", (char *)stateData);
    aos_post_event(EV_WIFI, CODE_WIFI_ON_CONNECTING, 0);
 }
 
@@ -731,10 +731,10 @@ static void stateGlobalAction_connect( void *oldStateData, struct event *event,
     /* set profiles[1] inactive */
     wifi_mgmr_profile_set_active_by_idx(&wifiMgmr, 1, 0);
 
-    bl_os_printf(DEBUG_HEADER "State Action ###%s### --->>> ###%s###\r\n",
-            (char*)oldStateData,
-            (char*)newStateData
-    );
+    // bl_os_printf(DEBUG_HEADER "State Action ###%s### --->>> ###%s###\r\n",
+    //         (char*)oldStateData,
+    //         (char*)newStateData
+    // );
 
     wifiMgmr.ap_info_ttl_curr = -1;
 
@@ -942,10 +942,10 @@ static bool stateConnectedIPNoGuard_disconnect(void *ch, struct event *event )
 static void stateConnectedIPNoAction_ipgot(void *oldStateData, struct event *event,
       void *newStateData )
 {
-    bl_os_printf(DEBUG_HEADER "State Action ###%s### --->>> ###%s###\r\n",
-            (char*)oldStateData,
-            (char*)newStateData
-    );
+    // bl_os_printf(DEBUG_HEADER "State Action ###%s### --->>> ###%s###\r\n",
+    //         (char*)oldStateData,
+    //         (char*)newStateData
+    // );
 }
 
 static void ip_obtaining_timeout(void *data)
@@ -1186,10 +1186,10 @@ static void stateConnectedIPYes_action( void *oldStateData, struct event *event,
     ip4_addr_t addr_ipaddr;
 
     ip4_addr_set_any(&addr_ipaddr);
-    bl_os_printf(DEBUG_HEADER "State Action ###%s### --->>> ###%s###\r\n",
-            (char*)oldStateData,
-            (char*)newStateData
-    );
+    // bl_os_printf(DEBUG_HEADER "State Action ###%s### --->>> ###%s###\r\n",
+    //         (char*)oldStateData,
+    //         (char*)newStateData
+    // );
     wifi_netif_dhcp_stop(&(wifiMgmr.wlan_sta.netif));
     netifapi_netif_set_addr(&(wifiMgmr.wlan_sta.netif), &addr_ipaddr, &addr_ipaddr, &addr_ipaddr);
 }
@@ -1270,10 +1270,10 @@ static void stateDisconnect_action_reconnect( void *oldStateData, struct event *
 
     stateDisconnect_data = (disconnectData_t*)oldStateData;
     profile_msg = &(stateDisconnect_data->profile_msg);
-    bl_os_printf(DEBUG_HEADER "State Action ###%s### --->>> ###%s###\r\n",
-            (char*)oldStateData,
-            (char*)newStateData
-    );
+    // bl_os_printf(DEBUG_HEADER "State Action ###%s### --->>> ###%s###\r\n",
+    //         (char*)oldStateData,
+    //         (char*)newStateData
+    // );
 
     if (profile_msg->ap_info_ttl != -1) {
       /* if not ap info type presist */
@@ -1318,10 +1318,10 @@ static void stateDisconnect_action_reconnect( void *oldStateData, struct event *
 static void stateDisconnect_action_idle( void *oldStateData, struct event *event,
       void *newStateData )
 {
-    bl_os_printf(DEBUG_HEADER "State Action ###%s### --->>> ###%s###\r\n",
-            (char*)oldStateData,
-            (char*)newStateData
-    );
+    // bl_os_printf(DEBUG_HEADER "State Action ###%s### --->>> ###%s###\r\n",
+    //         (char*)oldStateData,
+    //         (char*)newStateData
+    // );
     bl_os_printf(DEBUG_HEADER "Removing STA interface...\r\n");
     bl_main_if_remove(wifiMgmr.wlan_sta.vif_index);
 }

@@ -1,0 +1,70 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  demo:
+    strategy:
+      fail-fast: false
+      matrix:
+        examples:
+          - "bl602_demo_event"
+          - "bl602_wifi_test"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+        - uses: actions/checkout@v3
+          with:
+            submodules: "recursive"
+
+        - name: Install
+          run: |
+            sudo apt install -y git make
+
+        - name: Build 
+          working-directory: examples
+          run: |
+            cd ${{ matrix.examples }}
+            make CONFIG_CHIP_NAME=BL602 CONFIG_LINK_ROM=1 CONFIG_BLE_TP_SERVER=1 CONFIG_BLECONTROLLER_LIB=$3 -j4
+
+        - name: ${{ matrix.examples }}
+          uses: actions/upload-artifact@v3
+          with:
+            name: ${{ matrix.examples }}
+            path: examples/${{ matrix.examples }}/build/${{ matrix.examples }}.bin
+
+
+  network:
+    strategy:
+      fail-fast: false
+      matrix:
+        examples:
+          - "http_client_socket"
+          - "http_client_tcp"
+          - "httpd"
+          - "mdns"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+        - uses: actions/checkout@v3
+          with:
+            submodules: "recursive"
+
+        - name: Install
+          run: |
+            sudo apt install -y git make
+
+        - name: Build 
+          working-directory: examples/network
+          run: |
+            cd ${{ matrix.examples }}
+            make CONFIG_CHIP_NAME=BL602 CONFIG_LINK_ROM=1 -j
+
+        - name: ${{ matrix.examples }}
+          uses: actions/upload-artifact@v3
+          with:
+            name: ${{ matrix.examples }}
+            path: examples/network/${{ matrix.examples }}/build/${{ matrix.examples }}.bin

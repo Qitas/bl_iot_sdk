@@ -269,8 +269,8 @@ int wifi_mgmr_cli_scanlist(void)
 {
     int i;
 
-    bl_os_printf("cached scan list\r\n");
-    bl_os_printf("****************************************************************************************************\r\n");
+    // bl_os_printf("cached scan list\r\n");
+    bl_os_printf("\n****************************************************************************************************\r\n");
     for (i = 0; i < sizeof(wifiMgmr.scan_items)/sizeof(wifiMgmr.scan_items[0]); i++) {
         if (wifiMgmr.scan_items[i].is_used && (!wifi_mgmr_scan_item_is_timeout(&wifiMgmr, &wifiMgmr.scan_items[i]))) {
             bl_os_printf("index[%02d]: channel %02u, bssid %02X:%02X:%02X:%02X:%02X:%02X, rssi %3d, ppm abs:rel %3d : %3d, wps %2d, mode %6s, auth %20s, cipher:%12s, group_cipher:%12s, SSID %s\r\n",
@@ -1174,7 +1174,7 @@ const static struct cli_command cmds_user[] STATIC_CLI_CMD_ATTRIBUTE = {
         { "rf_dump", "rf dump", cmd_rf_dump},
         { "wifi_ap_bcnint_set", "wifi ap bcnin set", wifi_bcnint_set},
         { "wifi_capcode", "wifi capcode", wifi_capcode_cmd},
-        { "wifi_scan", "wifi scan", wifi_scan_cmd},
+        { "scan", "wifi scan", wifi_scan_cmd},
         { "wifi_scan_filter", "wifi scan", wifi_scan_filter_cmd},
         { "wifi_mon", "wifi monitor", wifi_mon_cmd},
         { "wifi_raw_send", "wifi raw send test", cmd_wifi_raw_send},
@@ -1182,7 +1182,7 @@ const static struct cli_command cmds_user[] STATIC_CLI_CMD_ATTRIBUTE = {
         { "wifi_sta_ip_set", "wifi STA IP config [ip] [mask] [gw] [dns1] [dns2]", wifi_sta_ip_set_cmd},
         { "wifi_sta_ip_unset", "wifi STA IP config unset", wifi_sta_ip_unset_cmd},
         { "wifi_sta_disconnect", "wifi station disconnect", wifi_disconnect_cmd},
-        { "wifi_sta_connect", "wifi station connect", wifi_connect_cmd},
+        { "sta", "wifi station connect", wifi_connect_cmd},
         { "wifi_sta_get_state", "wifi sta get state", wifi_sta_get_state_cmd},
         { "wifi_sta_autoconnect_enable", "wifi station enable auto reconnect", wifi_enable_autoreconnect_cmd},
         { "wifi_sta_autoconnect_disable", "wifi station disable auto reconnect", wifi_disable_autoreconnect_cmd},

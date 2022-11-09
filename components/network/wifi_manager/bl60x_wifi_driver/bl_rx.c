@@ -635,32 +635,32 @@ static int bl_rx_sm_connect_ind(struct bl_hw *bl_hw,
     USER_UNUSED(index);
     RWNX_DBG(RWNX_FN_ENTRY_STR);
 
-    bl_os_printf("[RX] Connection Status\r\n");
-    bl_os_printf("[RX]   status_code %u\r\n", ind->status_code);
-    bl_os_printf("[RX]   reason_code %u\r\n", ind->reason_code);
-    bl_os_printf("[RX]   connect result: %s\r\n", wifi_mgmr_get_sm_status_code_str(ind->status_code));
-    bl_os_printf("[RX]   MAC %02X:%02X:%02X:%02X:%02X:%02X\r\n",
-            ind->bssid.array[0],
-            ind->bssid.array[1],
-            ind->bssid.array[2],
-            ind->bssid.array[3],
-            ind->bssid.array[4],
-            ind->bssid.array[5]
-    );
-    bl_os_printf("[RX]   vif_idx %u\r\n", ind->vif_idx);
-    bl_os_printf("[RX]   ap_idx %u\r\n", ind->ap_idx);
-    bl_os_printf("[RX]   ch_idx %u\r\n", ind->ch_idx);
-    bl_os_printf("[RX]   qos %u\r\n", ind->qos);
-    bl_os_printf("[RX]   acm %u\r\n", ind->acm);
-    bl_os_printf("[RX]   assoc_req_ie_len %u\r\n", ind->assoc_req_ie_len);
-    bl_os_printf("[RX]   assoc_rsp_ie_len %u\r\n", ind->assoc_rsp_ie_len);
-    bl_os_printf("[RX]   aid %u\r\n", ind->aid);
-    bl_os_printf("[RX]   band %u\r\n", ind->band);
-    bl_os_printf("[RX]   center_freq %u\r\n", ind->center_freq);
-    bl_os_printf("[RX]   width %u\r\n", ind->width);
-    bl_os_printf("[RX]   center_freq1 %u\r\n", (unsigned int)ind->center_freq1);
-    bl_os_printf("[RX]   center_freq2 %u\r\n", (unsigned int)ind->center_freq2);
-    bl_os_printf("[RX]   tlv_ptr first %p\r\n", ind->connect_diagnose.first);
+    // bl_os_printf("[RX] Connection Status\r\n");
+    // bl_os_printf("[RX]   status_code %u\r\n", ind->status_code);
+    // bl_os_printf("[RX]   reason_code %u\r\n", ind->reason_code);
+    // bl_os_printf("[RX]   connect result: %s\r\n", wifi_mgmr_get_sm_status_code_str(ind->status_code));
+    // bl_os_printf("[RX]   MAC %02X:%02X:%02X:%02X:%02X:%02X\r\n",
+    //         ind->bssid.array[0],
+    //         ind->bssid.array[1],
+    //         ind->bssid.array[2],
+    //         ind->bssid.array[3],
+    //         ind->bssid.array[4],
+    //         ind->bssid.array[5]
+    // );
+    // bl_os_printf("[RX]   vif_idx %u\r\n", ind->vif_idx);
+    // bl_os_printf("[RX]   ap_idx %u\r\n", ind->ap_idx);
+    // bl_os_printf("[RX]   ch_idx %u\r\n", ind->ch_idx);
+    // bl_os_printf("[RX]   qos %u\r\n", ind->qos);
+    // bl_os_printf("[RX]   acm %u\r\n", ind->acm);
+    // bl_os_printf("[RX]   assoc_req_ie_len %u\r\n", ind->assoc_req_ie_len);
+    // bl_os_printf("[RX]   assoc_rsp_ie_len %u\r\n", ind->assoc_rsp_ie_len);
+    // bl_os_printf("[RX]   aid %u\r\n", ind->aid);
+    // bl_os_printf("[RX]   band %u\r\n", ind->band);
+    // bl_os_printf("[RX]   center_freq %u\r\n", ind->center_freq);
+    // bl_os_printf("[RX]   width %u\r\n", ind->width);
+    // bl_os_printf("[RX]   center_freq1 %u\r\n", (unsigned int)ind->center_freq1);
+    // bl_os_printf("[RX]   center_freq2 %u\r\n", (unsigned int)ind->center_freq2);
+    // bl_os_printf("[RX]   tlv_ptr first %p\r\n", ind->connect_diagnose.first);
 
     if (0 == ind->status_code) {
         bl_hw->sta_idx = ind->ap_idx;

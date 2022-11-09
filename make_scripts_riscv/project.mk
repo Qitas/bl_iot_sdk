@@ -92,7 +92,7 @@ export COMMON_MAKEFILES
 # The directory where we put all objects/libraries/binaries. The project Makefile can
 # configure this if needed.
 ifndef BUILD_DIR_BASE
-BUILD_DIR_BASE := $(PROJECT_PATH)/build_out
+BUILD_DIR_BASE := $(PROJECT_PATH)/build
 endif
 export BUILD_DIR_BASE
 
@@ -475,7 +475,7 @@ ifeq ($(CONFIG_ZIGBEE), 1)
 else ifeq ($(CONFIG_CPP_ENABLE), 1)
 	$(CXX) -o $@ $(LDFLAGS) -Wl,-Map=$(APP_MAP)
 else
-	$(CC) $(LDFLAGS) -o $@ -Wl,-Map=$(APP_MAP) $(shell find build_out/ -name bugkiller_*.o)
+	$(CC) $(LDFLAGS) -o $@ -Wl,-Map=$(APP_MAP) $(shell find build/ -name bugkiller_*.o)
 endif
 
 all_binaries: $(APP_BIN)

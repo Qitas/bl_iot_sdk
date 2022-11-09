@@ -185,10 +185,10 @@ int bl_wifi_eth_tx(struct pbuf *p, bool is_sta, struct bl_custom_tx_cfm *custom_
 
 static void netif_status_callback(struct netif *netif)
 {
-    bl_os_printf("[lwip] netif status callback\r\n"
-                "  IP: %s\r\n", ip4addr_ntoa(netif_ip4_addr(netif)));
-    bl_os_printf("  MK: %s\r\n", ip4addr_ntoa(netif_ip4_netmask(netif)));
-    bl_os_printf("  GW: %s\r\n", ip4addr_ntoa(netif_ip4_gw(netif)));
+    // bl_os_printf("[lwip] netif status callback\r\n"
+    //             "  IP: %s\r\n", ip4addr_ntoa(netif_ip4_addr(netif)));
+    // bl_os_printf("  MK: %s\r\n", ip4addr_ntoa(netif_ip4_netmask(netif)));
+    // bl_os_printf("  GW: %s\r\n", ip4addr_ntoa(netif_ip4_gw(netif)));
     if (ip4_addr_isany(netif_ip4_addr(netif))) {
         wifi_mgmr_api_ip_update();
     } else {

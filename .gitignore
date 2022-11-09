@@ -1,8 +1,8 @@
 # IntelliJ/CLion
 .idea
 
+**/build
 **/build_out
-
 # Linux
 *.swp
 *.tmp
