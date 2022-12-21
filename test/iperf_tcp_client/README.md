@@ -1,7 +1,7 @@
 # iperf 测试 
 
 ```
-make CONFIG_CHIP_NAME=BL602 CONFIG_LINK_ROM=1 -j 8
+make CONFIG_CHIP_NAME=BL602 CONFIG_LINK_ROM=1 -j 
 ```
 
 PC服务端UDP测试

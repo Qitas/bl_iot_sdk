@@ -5,9 +5,11 @@ BL IoT SDK
 
 * [中文文档](https://bouffalolab.github.io/bl_iot_sdk)
 
-| [examples](examples/)  |  BL602 | BL702   | 
+| [Test Cases](test/)  | [BL602](https://doc.soc.xin/BL602) | [BL702](https://doc.soc.xin/BL702)  | 
 | ----------------- | ----- | -------- |
-| [iperf](examples/bl602_wifi_test) | √ | X | 
+| [iperf_tcp_client](test/iperf_tcp_client) | √ | X | 
+| [iperf_udp_server](test/iperf_udp_server) | √ | X | 
+
 
 
 ## [安信可 WB2](https://docs.ai-thinker.com/wb2)

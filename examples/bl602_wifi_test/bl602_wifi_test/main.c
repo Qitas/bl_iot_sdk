@@ -1,32 +1,3 @@
-/*
- * Copyright (c) 2016-2022 Bouffalolab.
- *
- * This file is part of
- *     *** Bouffalolab Software Dev Kit ***
- *      (see www.bouffalolab.com).
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- *   1. Redistributions of source code must retain the above copyright notice,
- *      this list of conditions and the following disclaimer.
- *   2. Redistributions in binary form must reproduce the above copyright notice,
- *      this list of conditions and the following disclaimer in the documentation
- *      and/or other materials provided with the distribution.
- *   3. Neither the name of Bouffalo Lab nor the names of its contributors
- *      may be used to endorse or promote products derived from this software
- *      without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
 #include <FreeRTOS.h>
 #include <task.h>
 #include <timers.h>
@@ -85,31 +56,34 @@
 #include <blog.h>
 #include <bl_wps.h>
 
-#define WIFI_AP_PSM_INFO_SSID           "iperf"
-#define WIFI_AP_PSM_INFO_PASSWORD       "12345678"
-
-#define STA_SSID "iperf"
-#define STA_PASSWORD "12345678"
-#define STA_MAX_CONN_cCOUNT 15
+#define STA_SSID        "iperf"
+#define STA_PASSWORD    "12345678"
 #define STA_STATIC_IP   "192.168.0.100"
+#define IPERF_IP_LOCAL  "192.168.0.102"
+
+#define STA_MAX_CONN_cCOUNT 15
+
 typedef struct
 {
     uint32_t ip;
     uint32_t gateway;
     uint32_t netmask;
 } wifi_ip_params_t;
+wifi_ip_params_t sta_ip_params = {0};
+
 #define IP_SET_ADDR(a, b, c, d) (((uint32_t)((a)&0xff)) |       \
                                  ((uint32_t)((b)&0xff) << 8) |  \
                                  ((uint32_t)((c)&0xff) << 16) | \
                                  ((uint32_t)((d)&0xff) << 24))
 
 
-static wifi_interface_t g_wifi_sta_interface = NULL;
 static int g_wifi_sta_is_connected = 0;
+static wifi_interface_t wifi_interface = NULL;
 
-static wifi_interface_t wifi_interface;
-#define IPERF_IP_LOCAL      "0.0.0.0"
+
 extern void iperf_server_udp_entry(const char *name);
+extern void iperf_client_tcp_entry(const char *name);
+extern void iperf_server_entry(const char *name);
 
 extern void ble_stack_start(void);
 /* TODO: const */
@@ -138,29 +112,24 @@ int check_dts_config(char ssid[33], char password[64])
     return 0;
 }
 
-static void wifi_sta_connect(char *ssid, char *password)
-{
-    wifi_interface_t wifi_interface;
-    wifi_interface = wifi_mgmr_sta_enable();
-    wifi_mgmr_sta_connect(wifi_interface, ssid, password, NULL, NULL, 0, 0);
-}
-wifi_ip_params_t sta_ip_params = {0};
+// static void wifi_sta_connect(char *ssid, char *password)
+// {
+//     wifi_interface_t wifi_interface;
+//     wifi_interface = wifi_mgmr_sta_enable();
+//     wifi_mgmr_sta_connect(wifi_interface, ssid, password, NULL, NULL, 0, 0);
+// }
 
-int wifi_ip_connect(const char *sta_ip)
+int wifi_sta_connect_static_ip(const char *sta_ip)
 {
     struct ap_connect_adv ext_param = {0};
-    g_wifi_sta_interface = wifi_mgmr_sta_enable();
-    int freq;
+    wifi_interface = wifi_mgmr_sta_enable();
     uint8_t ip[4] = {0}, i = 0, j = 0;
     char *temp_arg = (char *)calloc(1, 6);
-    int state = WIFI_STATE_IDLE;
-
+    // int state = WIFI_STATE_IDLE;
     memset(ip, 0, sizeof(ip));
     memset(&sta_ip_params, 0, sizeof(sta_ip_params));
     memset(temp_arg, 0, sizeof(temp_arg));
-
-    for (int i = 0; i < 4; i++)
-    {
+    for (i = 0; i < 4; i++){
         temp_arg = sta_ip;
         while (*(sta_ip++) != '.')
         {
@@ -179,18 +148,15 @@ int wifi_ip_connect(const char *sta_ip)
     ext_param.ap_info.type = AP_INFO_TYPE_PRESIST;
     ext_param.ap_info.time_to_live = 5;
     ext_param.ap_info.band = 0;
-
-    if (g_wifi_sta_is_connected == 1)
-    {
+    if (g_wifi_sta_is_connected == 1){
         printf("sta has connect\r\n");
         return 0;
     }
-    else
-    {
+    else{
         wifi_mgmr_sta_autoconnect_enable();
         wifi_mgmr_sta_ip_set(sta_ip_params.ip, sta_ip_params.netmask, sta_ip_params.gateway, sta_ip_params.gateway, 0);
         printf("connect to wifi %s\r\n", STA_SSID);
-        return wifi_mgmr_sta_connect_ext(g_wifi_sta_interface, STA_SSID, STA_PASSWORD, &ext_param);
+        return wifi_mgmr_sta_connect_ext(wifi_interface, STA_SSID, STA_PASSWORD, &ext_param);
     }
     free(temp_arg);
 }
@@ -212,7 +178,7 @@ static void event_cb_wifi_event(input_event_t *event, void *private_data)
         {
             printf("[APP] [EVT] MGMR DONE %lld, now %lums\r\n", aos_now_ms(), bl_timer_now_us()/1000);
             wifi_interface = wifi_mgmr_sta_enable();
-            wifi_mgmr_sta_connect(wifi_interface, WIFI_AP_PSM_INFO_SSID, WIFI_AP_PSM_INFO_PASSWORD, NULL, NULL, 0, 0);
+            wifi_mgmr_sta_connect(wifi_interface, STA_SSID, STA_PASSWORD, NULL, NULL, 0, 0);
         }
         break;
         case CODE_WIFI_ON_MGMR_DENOISE:
@@ -290,8 +256,8 @@ static void event_cb_wifi_event(input_event_t *event, void *private_data)
             wifi_mgmr_sta_autoconnect_enable();
             printf("[APP] [EVT] GOT IP %lld\r\n", aos_now_ms());
             printf("[SYS] Memory left is %d KBytes\r\n", xPortGetFreeHeapSize()/1024);
-            // ipus_test_cmd();
-            iperf_server_udp_entry(IPERF_IP_LOCAL);
+            // iperf_server_udp_entry(IPERF_IP_LOCAL);
+            iperf_client_tcp_entry(IPERF_IP_LOCAL);
         }
         break;
         case CODE_WIFI_ON_EMERGENCY_MAC:
@@ -338,10 +304,10 @@ static void event_cb_wifi_event(input_event_t *event, void *private_data)
         break;
         case CODE_WIFI_ON_PROV_CONNECT:
         {
-            printf("[APP] [EVT] [PROV] [CONNECT] %lld\r\n", aos_now_ms());
-            printf("connecting to %s:%s...\r\n", ssid, password);
+            // printf("[APP] [EVT] [PROV] [CONNECT] %lld\r\n", aos_now_ms());
+            // printf("connecting to %s:%s...\r\n", ssid, password);
             // wifi_sta_connect(ssid, password);
-            wifi_ip_connect(STA_STATIC_IP);
+            wifi_sta_connect_static_ip(STA_STATIC_IP);
         }
         break;
         case CODE_WIFI_ON_PROV_DISCONNECT:
@@ -694,8 +660,8 @@ const static struct cli_command cmds_user[] STATIC_CLI_CMD_ATTRIBUTE = {
 static void _cli_init()
 {
     /*Put CLI which needs to be init here*/
-int codex_debug_cli_init(void);
-    codex_debug_cli_init();
+// int codex_debug_cli_init(void);
+//     codex_debug_cli_init();
     easyflash_cli_init();
     network_netutils_iperf_cli_register();
     network_netutils_tcpserver_cli_register();

@@ -53,6 +53,7 @@
 #include <utils_string.h>
 #include <utils_getopt.h>
 
+#define IPERF_ROUND_TIME_US    1000000
 
 #define IPERF_PORT_LOCAL    5002
 #define IPERF_PORT          5001
@@ -65,8 +66,11 @@
 #endif
 #define IPERF_BUFSZ_UDP     (1 * 1300)
 #define DEBUG_HEADER        "[NET] [IPC] "
-#define DEFAULT_HOST_IP     "192.168.11.1"
+#define DEFAULT_HOST_IP     "192.168.0.1"
 #define IPERF_IP_LOCAL      "0.0.0.0"
+static uint32_t s_tickstart = 0;
+
+extern int wifi_mgmr_rssi_get(int *rssi);
 
 volatile int exit_flag = 0;
 
@@ -123,22 +127,21 @@ typedef struct server_hdr_v1 {
     int32_t jitter2;
 } server_hdr;
 
-static void iperf_client_tcp(void *arg)
+void iperf_client_tcp(void *arg)
 {
     int i;
     int sock;
     int ret;
 
     uint8_t *send_buf;
-    int sentlen;
+    uint32_t sentlen;
     uint32_t tick0, tick1, tick2;
     struct sockaddr_in addr;
     iperf_param_t *iperf_param = (iperf_param_t *)arg;
     uint64_t bytes_transfered = 0;
 
     char speed[64] = { 0 };
-    float f_min = 8000.0, f_max = 0.0;
-
+    uint32_t f_min = 30000, f_max = 0;
     exit_flag = 0;
 
     send_buf = (uint8_t *) pvPortMalloc (IPERF_BUFSZ);
@@ -152,66 +155,57 @@ static void iperf_client_tcp(void *arg)
 
     while (!exit_flag) {
         sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-        if (sock < 0)
-        {
+        if (sock < 0){
             printf("create socket failed!\r\n");
             vTaskDelay(1000);
             continue;
         }
-
         addr.sin_family = PF_INET;
         addr.sin_port = htons(iperf_param->port);
         addr.sin_addr.s_addr = inet_addr(iperf_param->host);
-
         ret = connect(sock, (const struct sockaddr*)&addr, sizeof(addr));
-        if (ret == -1)
-        {
+        if (ret == -1){
             printf("Connect failed!\r\n");
             closesocket(sock);
-
             vTaskDelay(1000);
             continue;
         }
-
-        printf("Connect to iperf server successful!\r\n");
-
+        printf("Connect to iperf tcp server successful!\r\n");
         {
             int flag = 1;
-
             setsockopt(sock,
                 IPPROTO_TCP,     /* set option at TCP level */
                 TCP_NODELAY,     /* name of option */
                 (void *) &flag,  /* the cast is historical cruft */
                 sizeof(int));    /* length of option value */
         }
-
         sentlen = 0;
-
         tick0 = xTaskGetTickCount();
         tick1 = tick0;
         while(!exit_flag) {
             tick2 = xTaskGetTickCount();
             if (tick2 - tick1 >= 1000 * 5)
             {
-                float f_now, f_avg;
-
-                f_now = (float)(sentlen)  / 125 / (((int32_t)tick2 - (int32_t)tick1)) * 1000;
-                f_now /= 1000.0f;
+                uint32_t f_now = sentlen/640;
                 bytes_transfered += sentlen;
-                f_avg = (float)(bytes_transfered)  / 125 / (((int32_t)tick2 - (int32_t)tick0)) * 1000;
-                f_avg /= 1000.0f;
-
+                uint32_t f_avg = (bytes_transfered*125/16)/(tick2-tick0);
                 if (f_now < f_min) {
                     f_min = f_now;
                 }
                 if (f_max < f_now) {
                     f_max = f_now;
                 }
-                snprintf(speed, sizeof(speed), "%.4f(%.4f %.4f %.4f) Mbps!\r\n",
+                int rssi;
+                wifi_mgmr_rssi_get(&rssi);
+                snprintf(speed, sizeof(speed), "%" PRId32 ",\t%" PRId32 ",\t%" PRId32 ",%" PRId32 ",%" PRId32 ",Kbps,\t%d,dBm\r\n",
+                        (tick2-tick0)/1000,
+                        // sentlen/640,
+                        // bytes_transfered/640,
                         f_now,
                         f_min,
                         f_avg,
-                        f_max
+                        f_max,
+                        rssi
                 );
                 printf("%s", speed);
                 tick1 = tick2;
@@ -241,7 +235,7 @@ __exit:
     printf("iper stop\r\n");
 }
 
-static void iperf_client_tcp_entry(const char *name)
+void iperf_client_tcp_entry(const char *name)
 {
     int host_len;
     iperf_param_t *iperf_param;
@@ -273,7 +267,7 @@ _ERROUT:
     return;
 }
 
-static void iperf_client_udp(void *arg)
+void iperf_client_udp(void *arg)
 {
     int i;
     int sock = -1;
@@ -341,10 +335,9 @@ static void iperf_client_udp(void *arg)
         if (tick2 - tick1 >= 1000 * 5)
         {
             float f_now, f_avg;
-
             f_now = (float)(sentlen)  / 125 / (((int32_t)tick2 - (int32_t)tick1)) * 1000;
-            f_now /= 1000.0f;
             bytes_transfered += sentlen;
+            f_now /= 1000.0f;
             f_avg = (float)(bytes_transfered)  / 125 / (((int32_t)tick2 - (int32_t)tick0)) * 1000;
             f_avg /= 1000.0f;
 
@@ -354,11 +347,14 @@ static void iperf_client_udp(void *arg)
             if (f_max < f_now) {
                 f_max = f_now;
             }
-            snprintf(speed, sizeof(speed), "%.4f(%.4f %.4f %.4f) Mbps!\r\n",
+            int rssi;
+            wifi_mgmr_rssi_get(&rssi);
+            snprintf(speed, sizeof(speed), "%.4f,\t%.4f,%.4f,%.4f,Mbps\t,%d,dBm\r\n",
                     f_now,
                     f_min,
                     f_avg,
-                    f_max
+                    f_max,
+                    rssi
             );
             printf("%s", speed);
             tick1 = tick2;
@@ -374,7 +370,6 @@ retry:
         if (ret > 0) {
             sentlen += ret;
         }
-
         if (ret < 0) {
             if (ERR_MEM == ret) {
                 goto retry;
@@ -425,12 +420,11 @@ struct iperf_server_udp_ctx {
     *((uint8_t *)(ptr) + 2) = (_tmp >> 8) & 0xff;  \
     *((uint8_t *)(ptr) + 3) = (_tmp >> 0) & 0xff;  \
   }
-extern int wifi_mgmr_rssi_get(int *rssi);
-static void iperf_server_udp_recv_fn(void *arg, struct udp_pcb *pcb, struct pbuf *p,
-    const ip_addr_t *addr, u16_t port)
+
+static void iperf_server_udp_recv_fn(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
 {
     struct iperf_server_udp_ctx *ctx = (struct iperf_server_udp_ctx *)arg;
-    char speed[64] = { 0 };
+    char speed[100] = { 0 };
     UDP_datagram udp_header;
 
     // 接收数据，等待接收时间
@@ -459,13 +453,13 @@ static void iperf_server_udp_recv_fn(void *arg, struct udp_pcb *pcb, struct pbuf
         HTONL_PTR(&hdr->outorder_cnt, ctx->out_of_order_cnt);
         HTONL_PTR(&hdr->datagrams, ctx->datagram_cnt);
 
-        printf("iperf finish...\r\nreceive:%" PRId32 ",out of order:%" PRId32 "\r\n",
-            ctx->datagram_cnt, ctx->out_of_order_cnt);
+        printf("\r\nreceive total,%" PRId32 ",KB,\tout of order,%" PRId32 "\r\n",
+            ctx->datagram_cnt/1024, ctx->out_of_order_cnt);
         udp_sendto(pcb, p, addr, port);
 
         //xSemaphoreGive(ctx->comp_sig_handle);
         ctx->exit_flag = 1;
-    } else if (ctx->current - ctx->period_start >= 500*1000) {  // 500ms
+    } else if (ctx->current - ctx->period_start >= IPERF_ROUND_TIME_US) {  // 1000ms
         float f_now, f_avg;
 
         // f_now = (float)(ctx->recv_now)  / 125 / (((int32_t)ctx->current - (int32_t)ctx->period_start)) * 1000;
@@ -483,15 +477,24 @@ static void iperf_server_udp_recv_fn(void *arg, struct udp_pcb *pcb, struct pbuf
         if (ctx->f_max < f_now) {
             ctx->f_max = f_now;
         }
-         int rssi;
+        if(s_tickstart == 0){
+            s_tickstart = ctx->period_start;
+            printf("\r\nInterval Bandwidth\r\n");
+            printf("Interval,\tBandwidth,\tMin/Avg/Max\t,\tRSSI,\tLoss\r\n");
+        } 
+        int rssi;
         wifi_mgmr_rssi_get(&rssi);
-        snprintf(speed, sizeof(speed), "%.4f,\t%.4f,%.4f,%.4f,Mbps,%" PRId32 ",\t%d,dBm\r\n",
+        uint32_t ticks_head = (uint32_t)(ctx->period_start-s_tickstart)/1000000;
+        uint32_t ticks_tail = (uint32_t)(ctx->current-s_tickstart)/1000000;
+        snprintf(speed, sizeof(speed), "%" PRId32 ",%" PRId32 ",sec\t,%.3f,Mbps\t,%.3f,%.3f,%.3f,Mbps\t,%d,dBm\t,%" PRId32 "\r\n",
+                ticks_head,
+                ticks_tail,
                 f_now,
                 ctx->f_min,
                 f_avg,
                 ctx->f_max,
-                ctx->out_of_order_curr,
-                rssi
+                rssi,
+                ctx->out_of_order_curr   
         );
         printf("%s", speed);
 
@@ -560,10 +563,10 @@ _exit:
     if (iperf_param->host) vPortFree(iperf_param->host);
     if (iperf_param) vPortFree(iperf_param);  
 
-    printf("ipus exit..\r\n");
+    printf("iperf udp server exit..\r\n");
 }
 
-static void iperf_client_udp_entry(const char *name)
+void iperf_client_udp_entry(const char *name)
 {
     int host_len;
     iperf_param_t *iperf_param;
@@ -729,7 +732,7 @@ __exit:
     printf("ips exit..\r\n");
 }
 
-static void iperf_server_entry(const char *name)
+void iperf_server_entry(const char *name)
 {
     iperf_param_t *iperf_param;
 

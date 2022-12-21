@@ -4,15 +4,20 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '**.c'
+      - '**.h'
+      - 'Makefile'
+      - '**.mk'
 
 jobs:
-  demo:
+  test:
     strategy:
       fail-fast: false
       matrix:
-        examples:
-          - "bl602_demo_event"
-          - "bl602_wifi_test"
+        cases:
+          - "iperf_tcp_client"
+          - "iperf_udp_server"
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -22,49 +27,19 @@ jobs:
 
         - name: Install
           run: |
-            sudo apt install -y git make
+            sudo apt install -y make
 
         - name: Build 
-          working-directory: examples
+          working-directory: test
           run: |
-            cd ${{ matrix.examples }}
-            make CONFIG_CHIP_NAME=BL602 CONFIG_LINK_ROM=1 CONFIG_BLE_TP_SERVER=1 CONFIG_BLECONTROLLER_LIB=$3 -j4
-
-        - name: ${{ matrix.examples }}
-          uses: actions/upload-artifact@v3
-          with:
-            name: ${{ matrix.examples }}
-            path: examples/${{ matrix.examples }}/build/${{ matrix.examples }}.bin
-
-
-  network:
-    strategy:
-      fail-fast: false
-      matrix:
-        examples:
-          - "http_client_socket"
-          - "http_client_tcp"
-          - "httpd"
-          - "mdns"
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-        - uses: actions/checkout@v3
-          with:
-            submodules: "recursive"
-
-        - name: Install
-          run: |
-            sudo apt install -y git make
-
-        - name: Build 
-          working-directory: examples/network
-          run: |
-            cd ${{ matrix.examples }}
+            cd ${{ matrix.cases }}
             make CONFIG_CHIP_NAME=BL602 CONFIG_LINK_ROM=1 -j
+            mkdir output 
+            cp build/${{ matrix.cases }}.bin output/
+            cp ../partition_cfg_2MB-20220627.toml output/
 
-        - name: ${{ matrix.examples }}
+        - name: ${{ matrix.cases }}
           uses: actions/upload-artifact@v3
           with:
-            name: ${{ matrix.examples }}
-            path: examples/network/${{ matrix.examples }}/build/${{ matrix.examples }}.bin
+            name: ${{ matrix.cases }}
+            path: test/${{ matrix.cases }}/output
